@@ -1,0 +1,3 @@
+C:/Users/Yanai/CLionProjects/OSProject/cmake-build-debug/CMakeFiles/OSProject.dir
+C:/Users/Yanai/CLionProjects/OSProject/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Yanai/CLionProjects/OSProject/cmake-build-debug/CMakeFiles/rebuild_cache.dir
