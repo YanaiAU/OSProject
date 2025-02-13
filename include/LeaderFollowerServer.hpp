@@ -3,6 +3,7 @@
 
 #include "ThreadSafeQueue.hpp"
 #include "WorkerPool.hpp"
+#include "graph.h"
 #include <vector>
 #include <thread>
 #include <memory>
@@ -12,6 +13,8 @@ struct ClientResponse {
     int longestDistance;
     double averageDistance;
     int shortestMSTEdge;
+    int numMSTEdges;
+    Graph::Edge mstEdges[100];
 };
 
 class LeaderFollowerServer {

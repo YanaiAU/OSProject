@@ -33,12 +33,12 @@ void LeaderFollowerServer::handleClient(int clientSocket, WorkerPool& metricPool
         Graph graph(n);
         const int EXPECTED_EDGES = 5;
         Graph::Edge edge;
-        
+
         for (int i = 0; i < EXPECTED_EDGES; i++) {
             if (recv(clientSocket, &edge, sizeof(edge), 0) <= 0) {
                 throw std::runtime_error("Error receiving edge data");
             }
-            std::cout << "[HANDLER] Received edge: " << edge.src << " -> " << edge.dest 
+            std::cout << "[HANDLER] Received edge: " << edge.src << " -> " << edge.dest
                      << " (weight: " << edge.weight << ")" << std::endl;
             graph.addEdge(edge.src, edge.dest, edge.weight);
         }
@@ -86,12 +86,14 @@ void LeaderFollowerServer::handleClient(int clientSocket, WorkerPool& metricPool
             metricPool.submitTask(task);
         }
 
-        // Collect results
-        ClientResponse response{0, 0, 0.0, 0};
+        // Prepare response
+        ClientResponse response{0, 0, 0.0, 0, 0};
+
+        // Collect metric results
         for (int i = 0; i < 4; i++) {
             MetricResult result;
             metricPool.getResult(result);
-            
+
             switch (result.type) {
                 case MetricResult::TOTAL_WEIGHT:
                     response.totalWeight = result.intValue;
@@ -108,6 +110,16 @@ void LeaderFollowerServer::handleClient(int clientSocket, WorkerPool& metricPool
             }
         }
 
+        // Add MST edges to response
+        response.numMSTEdges = 0;
+        for (const auto& edge : mstEdges) {
+            Graph::Edge mstEdge;
+            mstEdge.src = std::get<0>(edge);
+            mstEdge.dest = std::get<1>(edge);
+            mstEdge.weight = std::get<2>(edge);
+            response.mstEdges[response.numMSTEdges++] = mstEdge;
+        }
+
         // Send response
         send(clientSocket, &response, sizeof(response), 0);
 
@@ -118,9 +130,16 @@ void LeaderFollowerServer::handleClient(int clientSocket, WorkerPool& metricPool
                   << "├── Average Distance: " << response.averageDistance << std::endl
                   << "└── Shortest MST Edge: " << response.shortestMSTEdge << std::endl;
 
+        std::cout << "[HANDLER] MST Edges:" << std::endl;
+        for (int i = 0; i < response.numMSTEdges; i++) {
+            std::cout << "  " << response.mstEdges[i].src << " -> "
+                     << response.mstEdges[i].dest << " (weight: "
+                     << response.mstEdges[i].weight << ")" << std::endl;
+        }
+
     } catch (const std::exception& e) {
         std::cerr << "[HANDLER] Error: " << e.what() << std::endl;
-        ClientResponse errorResponse{-1, -1, -1.0, -1};
+        ClientResponse errorResponse{-1, -1, -1.0, -1, 0};
         send(clientSocket, &errorResponse, sizeof(errorResponse), 0);
     }
 

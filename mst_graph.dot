@@ -1,7 +1,4 @@
 digraph MST {
     node [shape=circle, style=filled, fillcolor=lightgreen];
     edge [color=blue, penwidth=2];
-    0 -> 1 [label="10"];
-    0 -> 2 [label="6"];
-    0 -> 3 [label="5"];
 }

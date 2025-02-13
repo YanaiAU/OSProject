@@ -16,6 +16,8 @@ struct ClientResponse {
     int longestDistance;
     double averageDistance;
     int shortestMSTEdge;
+    int numMSTEdges;
+    Graph::Edge mstEdges[100];
 };
 
 class GraphVisualizer {
@@ -37,30 +39,22 @@ public:
 
         std::string cmd = "dot -Tpng " + filename + ".dot -o " + filename + ".png";
         if (system(cmd.c_str()) == 0) {
-            std::cout << "\nGraph visualization saved " << std::endl;
+            std::cout << "\nGraph visualization saved to " << filename << ".png" << std::endl;
         } else {
             std::cerr << "Error: Failed to generate PNG. Is graphviz installed?" << std::endl;
         }
     }
 
-    static void visualizeMST(const Graph& originalGraph, int totalWeight, const std::string& filename) {
+    static void visualizeMST(const ClientResponse& response, const std::string& filename) {
         std::ofstream out(filename + ".dot");
         out << "digraph MST {\n";
         out << "    node [shape=circle, style=filled, fillcolor=lightgreen];\n";
         out << "    edge [color=blue, penwidth=2];\n";
 
-        int currentWeight = 0;
-        std::vector<bool> used(originalGraph.V, false);
-
-        for (int i = 0; i < originalGraph.V && currentWeight < totalWeight; i++) {
-            for (const auto& edge : originalGraph.adjList[i]) {
-                if (!used[edge.dest]) {
-                    out << "    " << edge.src << " -> " << edge.dest
-                        << " [label=\"" << edge.weight << "\"];\n";
-                    currentWeight += edge.weight;
-                    used[edge.dest] = true;
-                }
-            }
+        for (int i = 0; i < response.numMSTEdges; i++) {
+            const auto& edge = response.mstEdges[i];
+            out << "    " << edge.src << " -> " << edge.dest
+                << " [label=\"" << edge.weight << "\"];\n";
         }
 
         out << "}\n";
@@ -68,7 +62,7 @@ public:
 
         std::string cmd = "dot -Tpng " + filename + ".dot -o " + filename + ".png";
         if (system(cmd.c_str()) == 0) {
-            std::cout << "\nMST visualization saved" << std::endl;
+            std::cout << "\nMST visualization saved to " << filename << ".png" << std::endl;
         } else {
             std::cerr << "Error: Failed to generate PNG. Is graphviz installed?" << std::endl;
         }
@@ -117,7 +111,6 @@ Graph createGraphInteractively() {
 }
 
 int main() {
-
     if (system("dot -V > /dev/null 2>&1") != 0) {
         std::cerr << "Warning: graphviz is not installed. Visualizations will not be generated.\n"
                   << "Please install graphviz using:\n"
@@ -181,9 +174,16 @@ int main() {
     std::cout << "Average Distance between vertices: " << response.averageDistance << std::endl;
     std::cout << "Shortest MST Edge: " << response.shortestMSTEdge << std::endl;
 
+    std::cout << "\nMST Edges:" << std::endl;
+    for (int i = 0; i < response.numMSTEdges; i++) {
+        std::cout << response.mstEdges[i].src << " -> "
+                 << response.mstEdges[i].dest << " (weight: "
+                 << response.mstEdges[i].weight << ")" << std::endl;
+    }
+
     // Visualize MST
     std::cout << "\nGenerating MST visualization..." << std::endl;
-    GraphVisualizer::visualizeMST(graph, response.totalWeight, "mst_graph");
+    GraphVisualizer::visualizeMST(response, "mst_graph");
 
     close(sock);
     std::cout << "\n[CLIENT] Disconnected from server." << std::endl;
