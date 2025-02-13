@@ -3,7 +3,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "graph.h"
+#include <fstream>
+#include <string>
+#include <cstdlib>
+#include "include/graph.h"
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 8080
@@ -13,6 +16,63 @@ struct ClientResponse {
     int longestDistance;
     double averageDistance;
     int shortestMSTEdge;
+};
+
+class GraphVisualizer {
+public:
+    static void visualizeGraph(const Graph& graph, const std::string& filename) {
+        std::ofstream out(filename + ".dot");
+        out << "digraph G {\n";
+        out << "    node [shape=circle, style=filled, fillcolor=lightblue];\n";
+        out << "    edge [color=black];\n";
+
+        for (int i = 0; i < graph.V; i++) {
+            for (const auto& edge : graph.adjList[i]) {
+                out << "    " << edge.src << " -> " << edge.dest
+                    << " [label=\"" << edge.weight << "\"];\n";
+            }
+        }
+        out << "}\n";
+        out.close();
+
+        std::string cmd = "dot -Tpng " + filename + ".dot -o " + filename + ".png";
+        if (system(cmd.c_str()) == 0) {
+            std::cout << "\nGraph visualization saved " << std::endl;
+        } else {
+            std::cerr << "Error: Failed to generate PNG. Is graphviz installed?" << std::endl;
+        }
+    }
+
+    static void visualizeMST(const Graph& originalGraph, int totalWeight, const std::string& filename) {
+        std::ofstream out(filename + ".dot");
+        out << "digraph MST {\n";
+        out << "    node [shape=circle, style=filled, fillcolor=lightgreen];\n";
+        out << "    edge [color=blue, penwidth=2];\n";
+
+        int currentWeight = 0;
+        std::vector<bool> used(originalGraph.V, false);
+
+        for (int i = 0; i < originalGraph.V && currentWeight < totalWeight; i++) {
+            for (const auto& edge : originalGraph.adjList[i]) {
+                if (!used[edge.dest]) {
+                    out << "    " << edge.src << " -> " << edge.dest
+                        << " [label=\"" << edge.weight << "\"];\n";
+                    currentWeight += edge.weight;
+                    used[edge.dest] = true;
+                }
+            }
+        }
+
+        out << "}\n";
+        out.close();
+
+        std::string cmd = "dot -Tpng " + filename + ".dot -o " + filename + ".png";
+        if (system(cmd.c_str()) == 0) {
+            std::cout << "\nMST visualization saved" << std::endl;
+        } else {
+            std::cerr << "Error: Failed to generate PNG. Is graphviz installed?" << std::endl;
+        }
+    }
 };
 
 void sendGraph(int sock, const Graph& graph) {
@@ -57,6 +117,13 @@ Graph createGraphInteractively() {
 }
 
 int main() {
+
+    if (system("dot -V > /dev/null 2>&1") != 0) {
+        std::cerr << "Warning: graphviz is not installed. Visualizations will not be generated.\n"
+                  << "Please install graphviz using:\n"
+                  << "    sudo apt-get install graphviz\n\n";
+    }
+
     std::cout << "[CLIENT] Starting client..." << std::endl;
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -80,6 +147,10 @@ int main() {
     // Create graph interactively
     std::cout << "\n=== Graph Creation ===" << std::endl;
     Graph graph = createGraphInteractively();
+
+    // Visualize original graph
+    std::cout << "\nGenerating graph visualization..." << std::endl;
+    GraphVisualizer::visualizeGraph(graph, "original_graph");
 
     // Send graph to server
     sendGraph(sock, graph);
@@ -109,6 +180,10 @@ int main() {
     std::cout << "Longest Distance between vertices: " << response.longestDistance << std::endl;
     std::cout << "Average Distance between vertices: " << response.averageDistance << std::endl;
     std::cout << "Shortest MST Edge: " << response.shortestMSTEdge << std::endl;
+
+    // Visualize MST
+    std::cout << "\nGenerating MST visualization..." << std::endl;
+    GraphVisualizer::visualizeMST(graph, response.totalWeight, "mst_graph");
 
     close(sock);
     std::cout << "\n[CLIENT] Disconnected from server." << std::endl;

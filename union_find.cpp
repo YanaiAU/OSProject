@@ -1,4 +1,4 @@
-#include "union_find.h"
+#include "include/union_find.h"
 #include <numeric>
 
 UnionFind::UnionFind(int _n) {

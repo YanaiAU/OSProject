@@ -8,13 +8,61 @@
 #include <memory>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "graph.h"
-#include "mst_algorithm.h"
-#include "mst_algorithm_factory.h"
+#include "include/graph.h"
+#include "include/mst_algorithm.h"
+#include "include/mst_algorithm_factory.h"
 
 #define SERVER_PORT 8080
 #define MAX_CLIENT_HANDLERS 3
 #define MAX_METRIC_WORKERS 4
+
+#include <queue>
+
+// Add this function to normalize edge directions in MST
+std::vector<std::tuple<int, int, int, int>> normalizeEdgeDirections(
+    const std::vector<std::tuple<int, int, int, int>>& mstEdges,
+    int numVertices,
+    int root = 0) {
+
+    // Create adjacency list representation
+    std::vector<std::vector<std::pair<int, std::tuple<int, int, int, int>>>> adj(numVertices);
+    for (const auto& edge : mstEdges) {
+        int u = std::get<0>(edge);
+        int v = std::get<1>(edge);
+        adj[u].push_back({v, edge});
+        adj[v].push_back({u, edge});
+    }
+
+    // BFS to orient edges away from root
+    std::vector<bool> visited(numVertices, false);
+    std::queue<int> q;
+    std::vector<std::tuple<int, int, int, int>> normalizedEdges;
+
+    q.push(root);
+    visited[root] = true;
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        for (const auto& [v, edge] : adj[u]) {
+            if (!visited[v]) {
+                visited[v] = true;
+                q.push(v);
+
+                // Orient edge from u to v
+                int src = u;
+                int dst = v;
+                int weight = std::get<2>(edge);
+                int id = std::get<3>(edge);
+                normalizedEdges.emplace_back(src, dst, weight, id);
+            }
+        }
+    }
+
+    return normalizedEdges;
+}
+
 
 // Thread-safe queue template
 template<typename T>
@@ -50,7 +98,12 @@ public:
 
 // Metric calculation structures
 struct MetricTask {
-    enum Type { TOTAL_WEIGHT, LONGEST_DISTANCE, SHORTEST_EDGE, AVERAGE_DISTANCE };
+    enum Type {
+        TOTAL_WEIGHT,
+        LONGEST_DISTANCE,
+        SHORTEST_EDGE,         // Changed back from SHORTEST_MST_DISTANCE
+        AVERAGE_DISTANCE
+    };
     Type type;
     std::vector<std::tuple<int, int, int, int>> mstEdges;
     int numVertices;
@@ -79,99 +132,140 @@ private:
     std::vector<std::thread> workers;
     std::atomic<bool> running{true};
 
-    void calculateMetric(const MetricTask& task, MetricResult& result) {
-        result.type = task.type;
+void calculateMetric(const MetricTask& task, MetricResult& result) {
+    result.type = task.type;
 
-        switch (task.type) {
-            case MetricTask::TOTAL_WEIGHT: {
-                int total = 0;
-                for (const auto& edge : task.mstEdges) {
-                    total += std::get<2>(edge);
-                }
-                result.intValue = total;
-                std::cout << "[METRIC WORKER] Calculated Total Weight: " << total << std::endl;
-                break;
+    switch (task.type) {
+        case MetricTask::TOTAL_WEIGHT: {
+            int total = 0;
+            for (const auto& edge : task.mstEdges) {
+                total += std::get<2>(edge);
             }
-            case MetricTask::LONGEST_DISTANCE: {
-                std::vector<std::vector<int>> dist(task.numVertices,
-                    std::vector<int>(task.numVertices, std::numeric_limits<int>::max()));
+            result.intValue = total;
+            std::cout << "[METRIC WORKER] Calculated Total Weight: " << total << std::endl;
+            break;
+        }
+        case MetricTask::LONGEST_DISTANCE: {
+            // Initialize distance matrix with infinity
+            std::vector<std::vector<int>> dist(task.numVertices,
+                std::vector<int>(task.numVertices, std::numeric_limits<int>::max()));
 
-                // Initialize distances
-                for (int i = 0; i < task.numVertices; i++) {
-                    dist[i][i] = 0;
-                }
-                for (const auto& edge : task.mstEdges) {
-                    int u = std::get<0>(edge);
-                    int v = std::get<1>(edge);
-                    int w = std::get<2>(edge);
-                    dist[u][v] = dist[v][u] = w;
-                }
-
-                // Floyd-Warshall
-                for (int k = 0; k < task.numVertices; k++)
-                    for (int i = 0; i < task.numVertices; i++)
-                        for (int j = 0; j < task.numVertices; j++)
-                            if (dist[i][k] != std::numeric_limits<int>::max() &&
-                                dist[k][j] != std::numeric_limits<int>::max())
-                                dist[i][j] = std::min(dist[i][j], dist[i][k] + dist[k][j]);
-
-                // Find maximum distance
-                int maxDist = 0;
-                for (int i = 0; i < task.numVertices; i++)
-                    for (int j = 0; j < task.numVertices; j++)
-                        if (dist[i][j] != std::numeric_limits<int>::max())
-                            maxDist = std::max(maxDist, dist[i][j]);
-
-                result.intValue = maxDist;
-                std::cout << "[METRIC WORKER] Calculated Longest Distance: " << result.intValue << std::endl;
-                break;
+            // Initialize distances with direct edges from MST
+            for (int i = 0; i < task.numVertices; i++) {
+                dist[i][i] = 0;
             }
-            case MetricTask::SHORTEST_EDGE: {
-                int minEdge = std::numeric_limits<int>::max();
-                for (const auto& edge : task.mstEdges) {
-                    minEdge = std::min(minEdge, std::get<2>(edge));
-                }
-                result.intValue = minEdge;
-                std::cout << "[METRIC WORKER] Calculated Shortest Edge: " << minEdge << std::endl;
-                break;
+
+            // Add ONLY the MST edges (directed!)
+            for (const auto& edge : task.mstEdges) {
+                int u = std::get<0>(edge);
+                int v = std::get<1>(edge);
+                int w = std::get<2>(edge);
+                dist[u][v] = w;  // Only in direction from u to v!
             }
-            case MetricTask::AVERAGE_DISTANCE: {
-                std::vector<std::vector<int>> dist(task.numVertices,
-                    std::vector<int>(task.numVertices, std::numeric_limits<int>::max()));
 
+            // Floyd-Warshall for directed graph
+            for (int k = 0; k < task.numVertices; k++) {
                 for (int i = 0; i < task.numVertices; i++) {
-                    dist[i][i] = 0;
-                }
-                for (const auto& edge : task.mstEdges) {
-                    int u = std::get<0>(edge);
-                    int v = std::get<1>(edge);
-                    int w = std::get<2>(edge);
-                    dist[u][v] = dist[v][u] = w;
-                }
-
-                for (int k = 0; k < task.numVertices; k++)
-                    for (int i = 0; i < task.numVertices; i++)
-                        for (int j = 0; j < task.numVertices; j++)
-                            if (dist[i][k] != std::numeric_limits<int>::max() &&
-                                dist[k][j] != std::numeric_limits<int>::max())
-                                dist[i][j] = std::min(dist[i][j], dist[i][k] + dist[k][j]);
-
-                long long sum = 0;
-                int count = 0;
-                for (int i = 0; i < task.numVertices; i++) {
-                    for (int j = i + 1; j < task.numVertices; j++) {
-                        if (dist[i][j] != std::numeric_limits<int>::max()) {
-                            sum += dist[i][j];
-                            count++;
+                    for (int j = 0; j < task.numVertices; j++) {
+                        if (dist[i][k] != std::numeric_limits<int>::max() &&
+                            dist[k][j] != std::numeric_limits<int>::max()) {
+                            int newDist = dist[i][k] + dist[k][j];
+                            if (newDist < dist[i][j]) {
+                                dist[i][j] = newDist;
+                            }
                         }
                     }
                 }
-                result.doubleValue = count > 0 ? static_cast<double>(sum) / count : 0.0;
-                std::cout << "[METRIC WORKER] Calculated Average Distance: " << result.doubleValue << std::endl;
-                break;
             }
+
+            // Debug output to show all valid paths
+            std::cout << "\n[DEBUG] Distance matrix for MST (inf = no path):" << std::endl;
+            for (int i = 0; i < task.numVertices; i++) {
+                for (int j = 0; j < task.numVertices; j++) {
+                    if (dist[i][j] == std::numeric_limits<int>::max()) {
+                        std::cout << "inf ";
+                    } else {
+                        std::cout << dist[i][j] << " ";
+                    }
+                }
+                std::cout << std::endl;
+            }
+
+            // Find maximum reachable distance
+            int maxDist = 0;
+            for (int i = 0; i < task.numVertices; i++) {
+                for (int j = 0; j < task.numVertices; j++) {
+                    if (i != j && dist[i][j] != std::numeric_limits<int>::max()) {
+                        maxDist = std::max(maxDist, dist[i][j]);
+                    }
+                }
+            }
+
+            result.intValue = maxDist;
+            std::cout << "[METRIC WORKER] Calculated Longest Distance: " << maxDist << std::endl;
+            break;
+        }
+        case MetricTask::SHORTEST_EDGE: {
+            int minDist = std::numeric_limits<int>::max();
+            for (const auto& edge : task.mstEdges) {
+                minDist = std::min(minDist, std::get<2>(edge));
+            }
+            result.intValue = minDist;
+            std::cout << "[METRIC WORKER] Calculated Shortest Edge: " << minDist << std::endl;
+            break;
+        }
+        case MetricTask::AVERAGE_DISTANCE: {
+            // Same initialization as longest distance
+            std::vector<std::vector<int>> dist(task.numVertices,
+                std::vector<int>(task.numVertices, std::numeric_limits<int>::max()));
+
+            for (int i = 0; i < task.numVertices; i++) {
+                dist[i][i] = 0;
+            }
+
+            for (const auto& edge : task.mstEdges) {
+                int u = std::get<0>(edge);
+                int v = std::get<1>(edge);
+                int w = std::get<2>(edge);
+                dist[u][v] = w;  // Only directed edges!
+            }
+
+            // Floyd-Warshall
+            for (int k = 0; k < task.numVertices; k++) {
+                for (int i = 0; i < task.numVertices; i++) {
+                    for (int j = 0; j < task.numVertices; j++) {
+                        if (dist[i][k] != std::numeric_limits<int>::max() &&
+                            dist[k][j] != std::numeric_limits<int>::max()) {
+                            int newDist = dist[i][k] + dist[k][j];
+                            if (newDist < dist[i][j]) {
+                                dist[i][j] = newDist;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Calculate average for reachable pairs where j≥i
+            long long sum = 0;
+            int count = 0;
+            for (int i = 0; i < task.numVertices; i++) {
+                for (int j = i; j < task.numVertices; j++) {
+                    if (i != j && dist[i][j] != std::numeric_limits<int>::max()) {
+                        sum += dist[i][j];
+                        count++;
+                        std::cout << "[DEBUG] Valid path " << i << "->" << j
+                                 << " = " << dist[i][j] << std::endl;
+                    }
+                }
+            }
+
+            result.doubleValue = count > 0 ? static_cast<double>(sum) / count : 0.0;
+            std::cout << "[METRIC WORKER] Calculated Average Distance (sum=" << sum
+                      << ", count=" << count << "): " << result.doubleValue << std::endl;
+            break;
         }
     }
+}
 
     void workerThread() {
         while (running) {
@@ -303,7 +397,10 @@ private:
 
             // Compute MST
             auto mstEdges = algorithm->findMST(edges, n);
+            mstEdges = normalizeEdgeDirections(mstEdges, n, 0);
             delete algorithm;
+
+
 
             // Use metric pool to calculate metrics in parallel
             ClientResponse response = metricPool.processMetrics(mstEdges, n);

@@ -115,6 +115,30 @@ build CMakeFiles/OSProject.dir/leader_follower_server.cpp.obj: CXX_COMPILER__OSP
   OBJECT_DIR = CMakeFiles\OSProject.dir
   OBJECT_FILE_DIR = CMakeFiles\OSProject.dir
 
+build CMakeFiles/OSProject.dir/server/src/main.cpp.obj: CXX_COMPILER__OSProject_unscanned_Debug C$:/Users/Yanai/CLionProjects/OSProject/server/src/main.cpp || cmake_object_order_depends_target_OSProject
+  DEP_FILE = CMakeFiles\OSProject.dir\server\src\main.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\OSProject.dir
+  OBJECT_FILE_DIR = CMakeFiles\OSProject.dir\server\src
+
+build CMakeFiles/OSProject.dir/server/src/MetricsCalculator.cpp.obj: CXX_COMPILER__OSProject_unscanned_Debug C$:/Users/Yanai/CLionProjects/OSProject/server/src/MetricsCalculator.cpp || cmake_object_order_depends_target_OSProject
+  DEP_FILE = CMakeFiles\OSProject.dir\server\src\MetricsCalculator.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\OSProject.dir
+  OBJECT_FILE_DIR = CMakeFiles\OSProject.dir\server\src
+
+build CMakeFiles/OSProject.dir/server/src/WorkerPool.cpp.obj: CXX_COMPILER__OSProject_unscanned_Debug C$:/Users/Yanai/CLionProjects/OSProject/server/src/WorkerPool.cpp || cmake_object_order_depends_target_OSProject
+  DEP_FILE = CMakeFiles\OSProject.dir\server\src\WorkerPool.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\OSProject.dir
+  OBJECT_FILE_DIR = CMakeFiles\OSProject.dir\server\src
+
+build CMakeFiles/OSProject.dir/server/src/LeaderFollowerServer.cpp.obj: CXX_COMPILER__OSProject_unscanned_Debug C$:/Users/Yanai/CLionProjects/OSProject/server/src/LeaderFollowerServer.cpp || cmake_object_order_depends_target_OSProject
+  DEP_FILE = CMakeFiles\OSProject.dir\server\src\LeaderFollowerServer.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\OSProject.dir
+  OBJECT_FILE_DIR = CMakeFiles\OSProject.dir\server\src
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target OSProject
@@ -123,7 +147,7 @@ build CMakeFiles/OSProject.dir/leader_follower_server.cpp.obj: CXX_COMPILER__OSP
 #############################################
 # Link the executable OSProject.exe
 
-build OSProject.exe: CXX_EXECUTABLE_LINKER__OSProject_Debug CMakeFiles/OSProject.dir/main.cpp.obj CMakeFiles/OSProject.dir/graph.cpp.obj CMakeFiles/OSProject.dir/tree.cpp.obj CMakeFiles/OSProject.dir/mst_algorithm.cpp.obj CMakeFiles/OSProject.dir/server.cpp.obj CMakeFiles/OSProject.dir/client.cpp.obj CMakeFiles/OSProject.dir/prim_algorithm.cpp.obj CMakeFiles/OSProject.dir/kruskal_algorithm.cpp.obj CMakeFiles/OSProject.dir/mst_algorithm_factory.cpp.obj CMakeFiles/OSProject.dir/union_find.cpp.obj CMakeFiles/OSProject.dir/leader_follower_server.cpp.obj
+build OSProject.exe: CXX_EXECUTABLE_LINKER__OSProject_Debug CMakeFiles/OSProject.dir/main.cpp.obj CMakeFiles/OSProject.dir/graph.cpp.obj CMakeFiles/OSProject.dir/tree.cpp.obj CMakeFiles/OSProject.dir/mst_algorithm.cpp.obj CMakeFiles/OSProject.dir/server.cpp.obj CMakeFiles/OSProject.dir/client.cpp.obj CMakeFiles/OSProject.dir/prim_algorithm.cpp.obj CMakeFiles/OSProject.dir/kruskal_algorithm.cpp.obj CMakeFiles/OSProject.dir/mst_algorithm_factory.cpp.obj CMakeFiles/OSProject.dir/union_find.cpp.obj CMakeFiles/OSProject.dir/leader_follower_server.cpp.obj CMakeFiles/OSProject.dir/server/src/main.cpp.obj CMakeFiles/OSProject.dir/server/src/MetricsCalculator.cpp.obj CMakeFiles/OSProject.dir/server/src/WorkerPool.cpp.obj CMakeFiles/OSProject.dir/server/src/LeaderFollowerServer.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\OSProject.dir

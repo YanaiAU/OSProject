@@ -1,4 +1,4 @@
-#include "kruskal_algorithm.h"
+#include "include/kruskal_algorithm.h"
 
 std::vector<std::tuple<int, int, int, int>> KruskalAlgorithm::findMST(
     const std::vector<std::tuple<int, int, int, int>>& graph_edges, int n) {

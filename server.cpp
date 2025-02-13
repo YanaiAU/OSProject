@@ -2,8 +2,8 @@
 #include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "graph.h"
-#include "mst_algorithm.h"
+#include "include/graph.h"
+#include "include/mst_algorithm.h"
 
 // Define the server port
 #define SERVER_PORT 8080
