@@ -1,4 +1,4 @@
-#include "include/prim_algorithm.h"
+#include "../include/prim_algorithm.h"
 #include <climits>
 
 

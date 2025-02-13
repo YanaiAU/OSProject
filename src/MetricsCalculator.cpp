@@ -80,27 +80,27 @@ MetricResult MetricsCalculator::calculateLongestDistance(
 
 MetricResult MetricsCalculator::calculateShortestEdge(
     const std::vector<std::tuple<int, int, int, int>>& mstEdges) {
-    
+
     MetricResult result;
     result.type = MetricResult::SHORTEST_EDGE;
-    
+
     int minDist = std::numeric_limits<int>::max();
     for (const auto& edge : mstEdges) {
         minDist = std::min(minDist, std::get<2>(edge));
     }
-    
+
     result.intValue = minDist;
     std::cout << "[METRIC] Calculated Shortest Edge: " << minDist << std::endl;
     return result;
 }
 
 MetricResult MetricsCalculator::calculateAverageDistance(
-    const std::vector<std::tuple<int, int, int, int>>& mstEdges, 
+    const std::vector<std::tuple<int, int, int, int>>& mstEdges,
     int numVertices) {
-    
+
     MetricResult result;
     result.type = MetricResult::AVERAGE_DISTANCE;
-    
+
     auto dist = buildDistanceMatrix(mstEdges, numVertices);
 
     // Calculate average for reachable pairs where j≥i
@@ -114,9 +114,9 @@ MetricResult MetricsCalculator::calculateAverageDistance(
             }
         }
     }
-    
+
     result.doubleValue = count > 0 ? static_cast<double>(sum) / count : 0.0;
-    std::cout << "[METRIC] Calculated Average Distance (sum=" << sum 
+    std::cout << "[METRIC] Calculated Average Distance (sum=" << sum
               << ", count=" << count << "): " << result.doubleValue << std::endl;
     return result;
 }

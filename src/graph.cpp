@@ -1,4 +1,4 @@
-#include "include/graph.h"
+#include "../include/graph.h"
 
 Graph::Graph(int V) : V(V) {
     adjList.resize(V);

@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
-#include "include/graph.h"
+#include "graph.h"
 
 class GraphVisualizer {
 public:

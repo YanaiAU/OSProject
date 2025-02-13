@@ -1,4 +1,4 @@
-#include "include/mst_algorithm_factory.h"
+#include "../include/mst_algorithm_factory.h"
 
 MSTAlgorithm* MSTAlgorithmFactory::createAlgorithm(AlgorithmType type) {
     switch (type) {

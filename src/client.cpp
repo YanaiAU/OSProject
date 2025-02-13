@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
-#include "include/graph.h"
+#include "../include/graph.h"
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 8080
